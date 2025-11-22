@@ -1,0 +1,6 @@
+venv/
+sdss_images/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
