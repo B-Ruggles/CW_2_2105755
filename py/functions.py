@@ -1,3 +1,4 @@
+from astroNN.datasets import galaxy10
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
@@ -7,9 +8,8 @@ import torch
 
 # Function to get pandas dataframe of gaia star data
 def get_data():
-    data_path = "/home/benr/ACT/CW2/gz2_hart16.csv.gz"
-    df = pd.read_csv(data_path)
-    return df 
+    images, labels = galaxy10.load_data()
+    return images,labels 
 
 #Function to split test and training data
 def split_data_rf(X1,X2,Y,test_size):
