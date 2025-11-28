@@ -37,7 +37,7 @@ def galaxy_type(g):
     return None
 
 def split_data_torch(X,Y,I ):
-  trn_idx, tst_idx = train_test_split(I,test_size=0.1,
+  trn_idx, tst_idx = train_test_split(I,test_size=0.15,
                                       stratify= Y[I],random_state=11)
   xtrn = X[trn_idx]  
   xtst = X[tst_idx]
@@ -45,7 +45,8 @@ def split_data_torch(X,Y,I ):
   ytst = Y[tst_idx]
   return xtrn,xtst,ytrn,ytst
 
-def train(model,trainLoader,testLoader,criterion,optimizer,device,n_epoch):
+def train(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optimizer
+          ,device,n_epoch):
   for e in range(n_epoch):
     #use model in training mode 
     model.train()
@@ -58,6 +59,7 @@ def train(model,trainLoader,testLoader,criterion,optimizer,device,n_epoch):
     for imgs,lbl in trainLoader:
       # move image and label to GPU 
       imgs = imgs.to(device)
+      imgs = (imgs - mean_tensor) / std_tensor 
       labels = lbl.to(device)
       #clear old gradients 
       optimizer.zero_grad()
@@ -82,14 +84,14 @@ def train(model,trainLoader,testLoader,criterion,optimizer,device,n_epoch):
     # calculate train accuracy 
     trn_acc = correct / total 
     # test trained model 
-    test_acc = evaluate(model, testLoader, device)
+    test_acc = evaluate(model, testLoader,mean_tensor, std_tensor, device)
 
     print(f"Epoch {e+1}/{n_epoch} "
         f"Train loss: {trn_loss:.4f}  "
         f"Train acc: {trn_acc:.3f}  "
         f"Test acc: {test_acc:.3f}")
 
-def evaluate(model,testLoader,device):
+def evaluate(model,testLoader, mean_tensor, std_tensor, device):
   model.eval()
   correct = 0
   total = 0 
@@ -97,6 +99,7 @@ def evaluate(model,testLoader,device):
   with torch.no_grad():
     for imgs,lbl in testLoader:
       imgs = imgs.to(device)
+      imgs = (imgs - mean_tensor) / std_tensor 
       labels = lbl.to(device)
       outputs = model(imgs)
       _,preds = torch.max(outputs,1)
