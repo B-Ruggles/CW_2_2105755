@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, r2_score 
 import torch.optim as optim 
 import torch
-
+from torchvision import transforms 
 # Function to get pandas dataframe of gaia star data
 def get_data():
     images, labels = galaxy10.load_data()
@@ -56,10 +56,15 @@ def train(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optimize
     correct = 0
     # total number of samples 
     total = 0
+
+
     for imgs,lbl in trainLoader:
-      # move image and label to GPU 
+      # move image to GPU
       imgs = imgs.to(device)
       imgs = (imgs - mean_tensor) / std_tensor 
+      #rotate images at random
+      imgs = random_rotate(imgs,0.5)
+      #move label to GPU 
       labels = lbl.to(device)
       #clear old gradients 
       optimizer.zero_grad()
@@ -95,6 +100,7 @@ def evaluate(model,testLoader, mean_tensor, std_tensor, device):
   model.eval()
   correct = 0
   total = 0 
+
   # stops gradient calculations for testing 
   with torch.no_grad():
     for imgs,lbl in testLoader:
@@ -109,7 +115,17 @@ def evaluate(model,testLoader, mean_tensor, std_tensor, device):
       total += labels.size(0)
     return correct / total if total > 0 else 0.0
   
-def new_size(H,k,p,s):
-  cnn_size = ((H+(2*p) - k) / s) + 1
-  pool_size = ((H-K)/s) + 1
-  return (cnn_size, pool_size)
+
+# function to rotate some images so cnn can see images at different angels 
+def random_rotate(imgs,p):
+   # only rotate images half of the time 
+   if torch.rand(1).item() > p:
+      return imgs 
+   s = imgs.size(0)
+   n90 = torch.randint(1,4,(s,), device=imgs.device)
+   rotated_img = []
+   for img,k in zip(imgs,n90):
+      rotated_img.append(torch.rot90(img,k = int(k),dims=(1,2)))
+   return torch.stack(rotated_img,dim =0) 
+   
+   
