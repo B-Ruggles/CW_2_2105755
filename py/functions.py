@@ -45,6 +45,69 @@ def split_data_torch(X,Y,I ):
   ytst = Y[tst_idx]
   return xtrn,xtst,ytrn,ytst
 
+
+def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optimizer
+          ,device,n_epoch):
+  early_stop = 7 
+  best_acc = 0.0
+  stop = 0 
+  for e in range(n_epoch):
+    #use model in training mode 
+    model.train()
+    #increment loss for each image 
+    running_loss = 0.0
+    # number of correct labels
+    correct = 0
+    # total number of samples 
+    total = 0
+
+
+    for imgs,lbl in trainLoader:
+      # move image to GPU
+      imgs = imgs.to(device)
+      imgs = (imgs - mean_tensor) / std_tensor 
+      #move label to GPU 
+      labels = lbl.to(device)
+      #clear old gradients 
+      optimizer.zero_grad()
+      # predict labels 
+      outputs = model(imgs)
+      # workout the loss for the prediction 
+      loss = criterion(outputs,labels)
+      # use backpropagation to calculate new weights 
+      loss.backward()
+      # update weights 
+      optimizer.step()
+      # get batch loss 
+      running_loss += loss.item() * imgs.size(0)
+      # return position of most likely catagory for each image in batch 
+      _,preds = torch.max(outputs,1)
+      # count the correctly predicted samples 
+      correct += (preds == labels).sum().item()
+      # increae the total samples 
+      total += labels.size(0)
+    # calculate train_loss for epoch 
+    trn_loss = running_loss / total
+    # calculate train accuracy 
+    trn_acc = correct / total 
+    # test trained model 
+    test_acc = evaluate(model, testLoader,mean_tensor, std_tensor, device)
+    if test_acc > best_acc:
+       best_acc = test_acc
+       torch.save(model.state_dict(), "best_model.pt")
+       print(f"Saved new best model (acc={best_acc:.4f})")
+       stop = 0 
+    else:
+       stop += 1 
+    if stop == early_stop:
+       break 
+    print(f"Epoch {e+1}/{n_epoch} "
+        f"Train loss: {trn_loss:.4f}  "
+        f"Train acc: {trn_acc:.3f}  "
+        f"Test acc: {test_acc:.3f}")
+
+
+
 def train(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optimizer
           ,device,n_epoch):
   for e in range(n_epoch):
@@ -100,7 +163,7 @@ def evaluate(model,testLoader, mean_tensor, std_tensor, device):
   model.eval()
   correct = 0
   total = 0 
-
+  best_acc = 0.0 
   # stops gradient calculations for testing 
   with torch.no_grad():
     for imgs,lbl in testLoader:
