@@ -1,5 +1,4 @@
-venv/
-sdss_images/
+venv1/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
