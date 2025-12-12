@@ -38,7 +38,7 @@ def galaxy_type(g):
     return None
 
 def split_data_torch(X,Y,I ):
-  trn_idx, tst_idx = train_test_split(I,test_size=0.15,
+  trn_idx, tst_idx = train_test_split(I,test_size=0.1,
                                       stratify= Y[I],random_state=11)
   xtrn = X[trn_idx]  
   xtst = X[tst_idx]
@@ -111,7 +111,8 @@ def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optim
         f"Train loss: {trn_loss:.4f}  "
         f"Train acc: {trn_acc:.3f}  "
         f"Test acc: {test_acc:.3f}")
-  plot_train(n_epoch,trn_accs,tst_accs)
+  if stop <= early_stop:
+    plot_train(n_epoch,trn_accs,tst_accs)
 
 def plot_train(e,trna,tsta):
    plt.figure(figsize=(5,5))
