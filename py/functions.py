@@ -93,7 +93,7 @@ def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optim
         f"Train loss: {trn_loss:.4f}  "
         f"Train acc: {trn_acc:.3f}  "
         f"Test acc: {test_acc:.3f}")
-  if stop <= early_stop:
+  if stop < early_stop:
     plot_train(n_epoch,trn_accs,tst_accs)
 
 def plot_train(e,trna,tsta):
