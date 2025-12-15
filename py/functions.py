@@ -16,28 +16,10 @@ def get_data():
 def split_data_rf(X1,X2,Y,test_size):
     return train_test_split(X1,X2,Y,test_size=test_size,random_state=11)
 
-#categorise galaxies 
-# put each galaxy into a catagory based on the above classifaction 
-def galaxy_type(g):
-    sm = g['t01_smooth_or_features_a01_smooth_debiased']
-    fe = g['t01_smooth_or_features_a02_features_or_disk_debiased']
-    ed = g['t02_edgeon_a04_yes_debiased']
-    sp = g['t04_spiral_a08_spiral_debiased']
-    bar = g['t03_bar_a06_bar_debiased']
 
-    if sm >= 0.8:
-        return 'E'
-
-    if sp >= 0.7 and fe >= 0.5:
-        return 'Spiral'
-
-    # Any reasonably clear disk (including edge-on) → Disk
-    if fe >= 0.7 or ed >= 0.6:
-        return 'Disk'
-
-    return None
-
+# split the data into training and test sets (Q2 and Q3)
 def split_data_torch(X,Y,I ):
+  #split by index to keep images and labels alligned 
   trn_idx, tst_idx = train_test_split(I,test_size=0.1,
                                       stratify= Y[I],random_state=11)
   xtrn = X[trn_idx]  
@@ -115,6 +97,7 @@ def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optim
     plot_train(n_epoch,trn_accs,tst_accs)
 
 def plot_train(e,trna,tsta):
+   #plot accuracies over epochs 
    plt.figure(figsize=(5,5))
    E = np.arange(e+1)
    plt.plot(E,trna,label='train_acc')
