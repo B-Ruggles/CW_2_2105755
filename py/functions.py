@@ -5,7 +5,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, r2_score 
 import torch.optim as optim 
 import torch
-from torchvision import transforms 
+import matplotlib.pyplot as plt 
+import numpy as np
 # Function to get pandas dataframe of gaia star data
 def get_data():
     images, labels = galaxy10.load_data()
@@ -15,29 +16,11 @@ def get_data():
 def split_data_rf(X1,X2,Y,test_size):
     return train_test_split(X1,X2,Y,test_size=test_size,random_state=11)
 
-#categorise galaxies 
-# put each galaxy into a catagory based on the above classifaction 
-def galaxy_type(g):
-    sm = g['t01_smooth_or_features_a01_smooth_debiased']
-    fe = g['t01_smooth_or_features_a02_features_or_disk_debiased']
-    ed = g['t02_edgeon_a04_yes_debiased']
-    sp = g['t04_spiral_a08_spiral_debiased']
-    bar = g['t03_bar_a06_bar_debiased']
 
-    if sm >= 0.8:
-        return 'E'
-
-    if sp >= 0.7 and fe >= 0.5:
-        return 'Spiral'
-
-    # Any reasonably clear disk (including edge-on) → Disk
-    if fe >= 0.7 or ed >= 0.6:
-        return 'Disk'
-
-    return None
-
+# split the data into training and test sets (Q2 and Q3)
 def split_data_torch(X,Y,I ):
-  trn_idx, tst_idx = train_test_split(I,test_size=0.15,
+  #split by index to keep images and labels alligned 
+  trn_idx, tst_idx = train_test_split(I,test_size=0.1,
                                       stratify= Y[I],random_state=11)
   xtrn = X[trn_idx]  
   xtst = X[tst_idx]
@@ -51,6 +34,8 @@ def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optim
   early_stop = 7 
   best_acc = 0.0
   stop = 0 
+  tst_accs = []
+  trn_accs = []
   for e in range(n_epoch):
     #use model in training mode 
     model.train()
@@ -90,8 +75,10 @@ def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optim
     trn_loss = running_loss / total
     # calculate train accuracy 
     trn_acc = correct / total 
+    trn_accs.append(trn_acc)
     # test trained model 
     test_acc = evaluate(model, testLoader,mean_tensor, std_tensor, device)
+    tst_accs.append(test_acc)
     if test_acc > best_acc:
        best_acc = test_acc
        torch.save(model.state_dict(), "best_model.pt")
@@ -100,64 +87,26 @@ def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optim
     else:
        stop += 1 
     if stop == early_stop:
+       plot_train(e,trn_accs,tst_accs)
        break 
     print(f"Epoch {e+1}/{n_epoch} "
         f"Train loss: {trn_loss:.4f}  "
         f"Train acc: {trn_acc:.3f}  "
         f"Test acc: {test_acc:.3f}")
+  if stop <= early_stop:
+    plot_train(n_epoch,trn_accs,tst_accs)
 
+def plot_train(e,trna,tsta):
+   #plot accuracies over epochs 
+   plt.figure(figsize=(5,5))
+   E = np.arange(e+1)
+   plt.plot(E,trna,label='train_acc')
+   plt.xlabel('epoch')
+   plt.ylabel('accuracy') 
+   plt.plot(E,tsta,label='test_acc')
+   plt.legend()
+   plt.show()
 
-
-def train(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optimizer
-          ,device,n_epoch):
-  for e in range(n_epoch):
-    #use model in training mode 
-    model.train()
-    #increment loss for each image 
-    running_loss = 0.0
-    # number of correct labels
-    correct = 0
-    # total number of samples 
-    total = 0
-
-
-    for imgs,lbl in trainLoader:
-      # move image to GPU
-      imgs = imgs.to(device)
-      imgs = (imgs - mean_tensor) / std_tensor 
-      #rotate images at random
-      imgs = random_rotate(imgs,0.5)
-      #move label to GPU 
-      labels = lbl.to(device)
-      #clear old gradients 
-      optimizer.zero_grad()
-      # predict labels 
-      outputs = model(imgs)
-      # workout the loss for the prediction 
-      loss = criterion(outputs,labels)
-      # use backpropagation to calculate new weights 
-      loss.backward()
-      # update weights 
-      optimizer.step()
-      # get batch loss 
-      running_loss += loss.item() * imgs.size(0)
-      # return position of most likely catagory for each image in batch 
-      _,preds = torch.max(outputs,1)
-      # count the correctly predicted samples 
-      correct += (preds == labels).sum().item()
-      # increae the total samples 
-      total += labels.size(0)
-    # calculate train_loss for epoch 
-    trn_loss = running_loss / total
-    # calculate train accuracy 
-    trn_acc = correct / total 
-    # test trained model 
-    test_acc = evaluate(model, testLoader,mean_tensor, std_tensor, device)
-
-    print(f"Epoch {e+1}/{n_epoch} "
-        f"Train loss: {trn_loss:.4f}  "
-        f"Train acc: {trn_acc:.3f}  "
-        f"Test acc: {test_acc:.3f}")
 
 def evaluate(model,testLoader, mean_tensor, std_tensor, device):
   model.eval()
@@ -179,16 +128,5 @@ def evaluate(model,testLoader, mean_tensor, std_tensor, device):
     return correct / total if total > 0 else 0.0
   
 
-# function to rotate some images so cnn can see images at different angels 
-def random_rotate(imgs,p):
-   # only rotate images half of the time 
-   if torch.rand(1).item() > p:
-      return imgs 
-   s = imgs.size(0)
-   n90 = torch.randint(1,4,(s,), device=imgs.device)
-   rotated_img = []
-   for img,k in zip(imgs,n90):
-      rotated_img.append(torch.rot90(img,k = int(k),dims=(1,2)))
-   return torch.stack(rotated_img,dim =0) 
-   
+
    
