@@ -29,11 +29,16 @@ def split_data_torch(X,Y,I ):
   return xtrn,xtst,ytrn,ytst
 
 
-def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optimizer
-          ,device,n_epoch):
+def train_q2(model,trainLoader,testLoader,
+            scheduler,mean_tensor,std_tensor,
+            criterion,optimizer,device,n_epoch):
+  #If no improvement to train_acc after 7 epochs, stop training early
   early_stop = 7 
+  # store best training accuracy. 
   best_acc = 0.0
+  # count epochs since last best accuracy
   stop = 0 
+  # store accuracies over epochs for plotting 
   tst_accs = []
   trn_accs = []
   for e in range(n_epoch):
@@ -73,6 +78,8 @@ def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optim
       total += labels.size(0)
     # calculate train_loss for epoch 
     trn_loss = running_loss / total
+    # decrease learning rate every 15 epochs. 
+    scheduler.step() 
     # calculate train accuracy 
     trn_acc = correct / total 
     trn_accs.append(trn_acc)
@@ -86,6 +93,7 @@ def train_q2(model,trainLoader,testLoader,mean_tensor,std_tensor,criterion,optim
        stop = 0 
     else:
        stop += 1 
+    # early stopping if no improvement 
     if stop == early_stop:
        plot_train(e,trn_accs,tst_accs)
        break 
