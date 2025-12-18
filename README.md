@@ -9,7 +9,7 @@ Using the Galaxy10 decals data-set, this project aims to test and compare a trad
 * Q2 - Basic Convolutional Neural Network 
 * Q3 - Improving on Convolutional Neural Network using Data Augmentation.
 
-The first two questions focus on the specifics of each method, question 3 focuses solely on how manipulating the images can improve the network. 
+The first two questions focus on the specifics of each method, question 3 focuses solely on how data augmentation can improve network performance. 
 
 
 
@@ -17,7 +17,7 @@ The first two questions focus on the specifics of each method, question 3 focuse
 
 ## The Data-set
 
-The Galaxy10 DECALS data-set is a set of ~17,000 full colour images taken by the DESI Legacy survey. Images of galaxies have have been placed in to 10 classes (a list of 10 classes can be found in q1_main.py). Each image is made up of 256x256 pixels. 
+The Galaxy10 DECALS data-set is a set of ~17,000 full colour images taken by the DESI Legacy survey. Images of galaxies have have been placed in to 10 classes (a list of 10 classes can be found in q1_main.py). Each image has resolution of 256x256 pixels. 
 
 Full details of the data-set can be found here: https://astronn.readthedocs.io/en/latest/galaxy10.html 
 
